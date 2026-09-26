@@ -65,6 +65,7 @@
   <div class="map-footer">
     <button class="btn btn-secondary" id="btn-dashboard">Wish Board 💝</button>
     <button class="btn btn-secondary" id="btn-shop">Shop 🛍️</button>
+    <button class="btn btn-secondary btn-letter-nav" id="btn-letter" hidden>💌</button>
   </div>
 </section>
 
@@ -233,6 +234,18 @@
   </div>
 </div>
 
+<div class="modal" id="modal-letter">
+  <div class="modal-card spring letter-card">
+    <div class="letter-heart">💌</div>
+    <div class="letter-title" id="letter-title">tell me honestly how do you feel?</div>
+    <textarea id="letter-text" class="letter-input" maxlength="2000" placeholder="type here…"></textarea>
+    <div class="letter-status" id="letter-status" hidden></div>
+    <button class="btn btn-primary" id="btn-letter-send">Send to daddy 💌</button>
+    <div class="letter-history" id="letter-history" hidden></div>
+    <button class="btn btn-secondary" id="btn-letter-close">Close</button>
+  </div>
+</div>
+
 <div class="modal" id="modal-pause">
   <div class="modal-card spring">
     <div class="lose-title">Paused ⏸️</div>
@@ -275,6 +288,7 @@
 <script src="js/audio.js"></script>
 <script src="js/render.js"></script>
 <script src="js/rewards.js"></script>
+<script src="js/mail.js"></script>
 <script src="js/dashboard.js"></script>
 <script src="js/main.js"></script>
 </body>

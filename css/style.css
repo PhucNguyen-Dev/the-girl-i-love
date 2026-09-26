@@ -479,6 +479,7 @@ button { font-family: var(--font); cursor: pointer; border: none; background: no
   max-width: 86vw;
   text-align: center;
   font-size: 15px;
+  pointer-events: none;
 }
 .toast.show { transform: translate(-50%, 0); }
 
@@ -568,3 +569,33 @@ button { font-family: var(--font); cursor: pointer; border: none; background: no
 /* endless node */
 .map-node.endless-node { font-size: 34px; }
 .map-node.endless-node .map-stars { font-size: 12px; letter-spacing: 1px; }
+
+/* ═══════════════════════════
+   v6 — letter mailbox 💌
+   ═══════════════════════════ */
+
+.btn-letter-nav { padding: 8px 14px; font-size: 18px; line-height: 1; }
+.letter-card { max-width: 420px; text-align: center; display: flex; flex-direction: column; gap: 10px; }
+.letter-heart { font-size: 46px; line-height: 1; animation: floaty 3s ease-in-out infinite; }
+.letter-title {
+  font-weight: 800; font-size: 19px; color: var(--pink); line-height: 1.4;
+}
+.letter-input {
+  width: 100%; min-height: 120px; max-height: 220px; resize: vertical;
+  border: 2px solid var(--rose-2); border-radius: 14px; padding: 12px;
+  font: inherit; font-size: 16px; font-weight: 600; color: var(--ink);
+  background: var(--cream, #fff7f2); box-sizing: border-box;
+}
+.letter-input:focus { outline: none; border-color: var(--pink); }
+.letter-status { font-weight: 800; font-size: 14px; color: var(--ink-soft); }
+.letter-status.ok { color: #2f9e6b; }
+.letter-history {
+  max-height: 130px; overflow-y: auto; text-align: left;
+  display: flex; flex-direction: column; gap: 6px;
+  font-size: 13px; font-weight: 600; color: var(--ink-soft);
+}
+.letter-history .lh-item {
+  background: rgba(255, 255, 255, .7); border-radius: 10px; padding: 7px 10px;
+  line-height: 1.4; word-break: break-word;
+}
+.letter-history .lh-when { color: var(--pink); font-weight: 800; }

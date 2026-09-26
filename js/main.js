@@ -4,7 +4,7 @@
   globalThis.TGL = globalThis.TGL || {};
 
   var $ = function (id) { return document.getElementById(id); };
-  var Audio, Render, Board, Levels, Rewards, Dashboard, Content;
+  var Audio, Render, Board, Levels, Rewards, Dashboard, Content, Mail;
 
   var app = {
     screen: "splash",
@@ -192,6 +192,12 @@
 
     var nodes = layout.slice();
     var storyDone = p.stars[Levels.count] != null;
+    $("btn-letter").hidden = !storyDone;
+    if (storyDone && !Rewards.letterSeen() && !app.modalOpen) {
+      setTimeout(function () {
+        if (app.screen === "map" && !app.modalOpen) openLetter();
+      }, 600);
+    }
     if (storyDone) {
       var ep = Levels.nodePos(layout.length);
       nodes.push({ n: Levels.count + 1, x: ep.x, y: ep.y, endless: true });
@@ -809,6 +815,65 @@
     });
   }
 
+  /* ── letter mailbox 💌 ────────────────────── */
+
+  function openLetter() {
+    $("letter-title").textContent = Content.get().letterPrompt || "tell me honestly how do you feel?";
+    $("letter-text").value = "";
+    $("letter-status").hidden = true;
+    renderLetterHistory();
+    Rewards.markLetterSeen();
+    TGL.Audio.play("tap");
+    openModal("modal-letter");
+  }
+
+  function renderLetterHistory() {
+    var box = $("letter-history");
+    var list = Mail.outbox().slice().reverse().slice(0, 8);
+    if (!list.length) { box.hidden = true; box.innerHTML = ""; return; }
+    box.hidden = false;
+    box.innerHTML = "";
+    list.forEach(function (m) {
+      var row = document.createElement("div");
+      row.className = "lh-item";
+      var when = document.createElement("span");
+      when.className = "lh-when";
+      when.textContent = new Date(m.at).toLocaleString() + (m.status === "sent" ? " ✓" : " 📡");
+      row.appendChild(when);
+      row.appendChild(document.createElement("br"));
+      row.appendChild(document.createTextNode(m.text.slice(0, 140)));
+      box.appendChild(row);
+    });
+  }
+
+  function sendLetter() {
+    var text = $("letter-text").value.trim();
+    if (!text) { toast("Type something first 💗"); TGL.Audio.play("invalid"); return; }
+    if (!Mail.queue(text, (Rewards.settings().herName || ""))) return;
+    $("letter-text").value = "";
+    var statusEl = $("letter-status");
+    statusEl.hidden = false;
+    statusEl.className = "letter-status";
+    statusEl.textContent = "Sending…";
+    Mail.flush().then(function (r) {
+      renderLetterHistory();
+      if (r.sent > 0) {
+        statusEl.textContent = "Sent ✓ check your inbox";
+        statusEl.classList.add("ok");
+        TGL.Audio.play("wish");
+      } else if (r.left > 0) {
+        statusEl.textContent = "Offline — it'll send by itself 📡";
+      } else {
+        statusEl.textContent = "Will retry later ⏳";
+      }
+    });
+  }
+
+  function closeLetter() {
+    closeModal("modal-letter");
+    if (app.screen !== "map") showScreen("map");
+  }
+
   /* ── dev panel ────────────────────────────── */
 
   function noteCakeTap() {
@@ -853,13 +918,27 @@
 
   function registerSW() {
     if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)) {
-      navigator.serviceWorker.register("sw.js").catch(function () { /* offline file ok */ });
+      navigator.serviceWorker.register("sw.js").then(function (reg) {
+        function watch(sw) {
+          if (!sw) return;
+          sw.addEventListener("statechange", function () {
+            if (sw.state === "installed" && navigator.serviceWorker.controller) {
+              toast("new version downloaded- coming baby", 4000);
+            }
+          });
+        }
+        if (reg.waiting && navigator.serviceWorker.controller) {
+          toast("new version downloaded- coming baby", 4000);
+        }
+        reg.addEventListener("updatefound", function () { watch(reg.installing); });
+      }).catch(function () { /* offline file ok */ });
     }
   }
 
   function boot() {
     Audio = TGL.Audio; Render = TGL.Render; Board = TGL.Board;
     Levels = TGL.Levels; Rewards = TGL.Rewards; Dashboard = TGL.Dashboard; Content = TGL.Content;
+    Mail = TGL.Mail;
 
     var s = Rewards.settings();
     Audio.setSound(s.sound);
@@ -888,6 +967,11 @@
     });
     $("btn-shop").addEventListener("click", openShop);
     $("btn-shop-back").addEventListener("click", function () { showScreen("map"); });
+    $("btn-letter").addEventListener("click", openLetter);
+    $("btn-letter-send").addEventListener("click", sendLetter);
+    $("btn-letter-close").addEventListener("click", closeLetter);
+    if (Mail.pending() > 0) Mail.flush();
+    window.addEventListener("online", function () { if (Mail.pending() > 0) Mail.flush(); });
     $("dev-cake").addEventListener("click", noteCakeTap);
 
     $("btn-dashboard").addEventListener("click", openDashboard);
@@ -970,7 +1054,8 @@
     $("btn-finale-ok").addEventListener("click", function () {
       TGL.Audio.play("tap");
       closeModal("modal-finale");
-      showScreen("map");
+      if (!Rewards.letterSeen()) openLetter();
+      else showScreen("map");
     });
 
     $("btn-dev-close").addEventListener("click", function () { closeModal("modal-dev"); });

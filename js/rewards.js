@@ -14,7 +14,8 @@
     endless: "tgl_endless",
     seenIntro: "tgl_seen_intro",
     matches: "tgl_matches",
-    dareState: "tgl_dare_state"
+    dareState: "tgl_dare_state",
+    letterSeen: "tgl_letter_seen"
   };
 
   var STAR_MULT = { 0: 1.0, 1: 1.10, 2: 1.15, 3: 1.25 };
@@ -253,6 +254,10 @@
     /* ── first-launch story ── */
     seenIntro: function () { return !!TGL.Storage.get(K.seenIntro, false); },
     markIntroSeen: function () { TGL.Storage.set(K.seenIntro, true); },
+
+    /* ── letter mailbox (first auto-open after finale) ── */
+    letterSeen: function () { return !!TGL.Storage.get(K.letterSeen, false); },
+    markLetterSeen: function () { TGL.Storage.set(K.letterSeen, true); },
 
     /* ── backup / restore / reset ── */
     exportAll: function () {

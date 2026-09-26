@@ -1,5 +1,5 @@
 /* sw.js — offline-first cache for The Girl I Love 🎂 */
-var CACHE = "tgl-v5";
+var CACHE = "tgl-v7";
 var ASSETS = [
   "./",
   "./index.html",
@@ -14,6 +14,7 @@ var ASSETS = [
   "./js/audio.js",
   "./js/render.js",
   "./js/rewards.js",
+  "./js/mail.js",
   "./js/dashboard.js",
   "./js/main.js"
 ];

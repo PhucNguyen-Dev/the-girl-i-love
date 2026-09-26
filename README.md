@@ -22,6 +22,8 @@ Edit the dare lists (one per line) and the finale message → *Save content*.
 - 🎂 cake currency: hammer 🔨 (15), shuffle 🔀 (10), +5 moves ➕ (20)
 - Booster Shop 🛍️ — stockpile boosters with cakes; stock is used before cake pay-per-use
 - Idle hint after 10s, pre-level boosters (levels ≥5), wish Board 💝
+- 💌 Letter mailbox — after the finale she writes to you; answer is emailed
+  via FormSubmit (saved locally first, auto-retry when online)
 - Lose dares 🎲, 10-win streak secret 🏆, level-15 finale
 - Lives toggle (off by default), settings, backup/restore, reset
 - Installable offline PWA, touch-first, safe-area aware
@@ -29,12 +31,19 @@ Edit the dare lists (one per line) and the finale message → *Save content*.
 ## Development
 
 ```bash
-node --test tests/board.test.js tests/rewards.test.js   # engine + dare tests (30)
+node --test tests/board.test.js tests/rewards.test.js tests/mail.test.js   # 32 tests
 ```
 
 - Engine is pure (`js/board.js`) — no DOM, fully covered by tests.
-- After changing **any** asset, bump `CACHE` in `sw.js` (e.g. `tgl-v3`) so phones pick up the update.
+- After changing **any** asset, bump `CACHE` in `sw.js` (e.g. `tgl-v7`) so phones pick up the update.
 
 ## Deploy
 
 GitHub Pages: repo → Settings → Pages → Deploy from branch → `main` / root.
+
+### One-time: activate the mailbox
+
+The first letter submission to FormSubmit triggers an **"Activate Form" email**
+to `kentnguyenbuildthewall@gmail.com` — click the link in that email once.
+Until then letters stay queued (`pending`) on her phone and deliver
+automatically after activation (next app open / online event / send).

@@ -58,7 +58,10 @@
       "You beat all 15 levels — but honestly, every day with you feels like a win. " +
       "I made this for you because you deserve a whole game dedicated to how special you are.\n\n" +
       "I love you. 🎈\n\n" +
-      "something ahead waiting for you"
+      "something ahead waiting for you",
+
+    // The mailbox prompt (opens after the finale, reusable from the map)
+    letterPrompt: "tell me honestly how do you feel?"
   };
 
   // Merge phone-side developer-panel edits over the baked-in defaults
@@ -71,7 +74,9 @@
       specialDares: Array.isArray(override.specialDares) && override.specialDares.length
         ? override.specialDares : DEFAULT_CONTENT.specialDares,
       finaleMessage: typeof override.finaleMessage === "string" && override.finaleMessage
-        ? override.finaleMessage : DEFAULT_CONTENT.finaleMessage
+        ? override.finaleMessage : DEFAULT_CONTENT.finaleMessage,
+      letterPrompt: typeof override.letterPrompt === "string" && override.letterPrompt
+        ? override.letterPrompt : DEFAULT_CONTENT.letterPrompt
     };
   }
 
