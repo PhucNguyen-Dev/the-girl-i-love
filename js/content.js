@@ -38,20 +38,17 @@
       "Recreate your favorite photo of me — pose and all"
     ],
 
-    // 10 wins in a row → the SECRET unlocked list (bigger)
+    // 10 wins in a row → the SECRET unlocked list
+    // Rules: each dare shows once first; only after 10 matches can it reappear.
     specialDares: [
-      "Plan our next date completely by yourself 📅",
-      "Breakfast in bed — your call, my wallet 🥞",
-      "You choose the next three things we watch. No complaints.",
-      "Write me a hand-made love note 💌",
-      "Be my photographer for a 10-photo shoot 📸",
-      "Learn MY favorite song chorus and perform it live",
-      "A whole day where I decide absolutely nothing 😌",
-      "Surprise me with my favorite snack within 24 hours 🍫",
-      "Slow dance with me in the kitchen. Right now. 💃",
-      "Post a sweet photo of us with a caption you write",
-      "Let me win our next game — and genuinely cheer for me 🏆",
-      "Tell me the exact moment you knew you loved me 💗"
+      "drop your little wet tight pussy upon my face and let me eat it",
+      "come on bae, show me your naughty face with endless moans",
+      "do a sex squat excerise with my cock and moan till the abyss hear you",
+      "you reach here, it's time for you to taste the most dangerous fruit",
+      "beware me in your sleep, I can tear your pussy apart with miles away",
+      "tied yourself first and wait for your daddy to reward you",
+      "who has the most dirty mind right now, huh. Do you dare to tell me so badly? 😈",
+      "tiddy your room now baby, and prepare for the biggest mess ever with our juice today"
     ],
 
     // Shown after beating level 15 — the birthday finale
@@ -59,7 +56,8 @@
       "Happy Birthday, my love 🎂\n\n" +
       "You beat all 15 levels — but honestly, every day with you feels like a win. " +
       "I made this for you because you deserve a whole game dedicated to how special you are.\n\n" +
-      "I love you. 🎈"
+      "I love you. 🎈\n\n" +
+      "something ahead waiting for you"
   };
 
   // Merge phone-side developer-panel edits over the baked-in defaults

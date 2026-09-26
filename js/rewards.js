@@ -12,7 +12,9 @@
     hearts: "tgl_hearts",
     stock: "tgl_stock",
     endless: "tgl_endless",
-    seenIntro: "tgl_seen_intro"
+    seenIntro: "tgl_seen_intro",
+    matches: "tgl_matches",
+    dareState: "tgl_dare_state"
   };
 
   var STAR_MULT = { 0: 1.0, 1: 1.10, 2: 1.15, 3: 1.25 };
@@ -83,6 +85,7 @@
       var streak = Rewards.streak() + 1;
       var secret = streak >= 10;
       TGL.Storage.set(K.streak, secret ? 0 : streak);
+      TGL.Storage.set(K.matches, (TGL.Storage.get(K.matches, 0) || 0) + 1);
 
       // hearts: free refill on win if the toggle drained them
       if (hearts() < 5) TGL.Storage.set(K.hearts, 5);
@@ -93,6 +96,7 @@
     /* ── lose ── */
     lose: function () {
       TGL.Storage.set(K.streak, 0);
+      TGL.Storage.set(K.matches, (TGL.Storage.get(K.matches, 0) || 0) + 1);
       var usedLife = false;
       if (settings().retryCostsLife) {
         var h = hearts();
@@ -112,10 +116,38 @@
       var key = which === "special" ? "special" : "my";
       var seen = rev[key] || [];
       var pool = [];
-      for (var i = 0; i < list.length; i++) if (seen.indexOf(i) === -1) pool.push(i);
-      var idx;
+      var idx, i;
+      var matches = TGL.Storage.get(K.matches, 0) || 0;
+
+      if (which === "special") {
+        // rule: every dare shows once first; a shown dare needs a
+        // 10-match cooldown before it has a chance to appear again
+        var unseen = [];
+        for (i = 0; i < list.length; i++) if (seen.indexOf(i) === -1) unseen.push(i);
+        if (unseen.length) {
+          pool = unseen;
+        } else {
+          var st = TGL.Storage.get(K.dareState, null);
+          if (!st || typeof st !== "object" || typeof st.last !== "object" || !st.last) st = { last: {} };
+          for (i = 0; i < list.length; i++) {
+            var last = typeof st.last[i] === "number" ? st.last[i] : -1;
+            if (matches - last >= 10) pool.push(i);
+          }
+          if (!pool.length) for (i = 0; i < list.length; i++) pool.push(i); // safety
+        }
+      } else {
+        for (i = 0; i < list.length; i++) if (seen.indexOf(i) === -1) pool.push(i);
+      }
+
       if (pool.length) idx = pool[Math.floor(Math.random() * pool.length)];
       else idx = Math.floor(Math.random() * list.length);
+
+      if (which === "special") {
+        var st2 = TGL.Storage.get(K.dareState, null);
+        if (!st2 || typeof st2 !== "object" || typeof st2.last !== "object" || !st2.last) st2 = { last: {} };
+        st2.last[idx] = matches;
+        TGL.Storage.set(K.dareState, st2);
+      }
 
       var firstTime = seen.indexOf(idx) === -1;
       if (firstTime) {

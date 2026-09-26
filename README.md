@@ -29,7 +29,7 @@ Edit the dare lists (one per line) and the finale message → *Save content*.
 ## Development
 
 ```bash
-node --test tests/board.test.js   # engine tests (25)
+node --test tests/board.test.js tests/rewards.test.js   # engine + dare tests (30)
 ```
 
 - Engine is pure (`js/board.js`) — no DOM, fully covered by tests.
