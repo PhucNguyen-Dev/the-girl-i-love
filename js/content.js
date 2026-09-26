@@ -12,6 +12,7 @@
   var DEFAULT_CONTENT = {
     // When SHE loses → she must do one of these
     myDares: [
+      "Now rub you pussy against my cock until you dry",
       "Give me a 60-second hug, timer on 😌",
       "Sing the chorus of my favorite song",
       "Make me a drink and deliver it with a curtsy ☕",
