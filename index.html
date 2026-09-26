@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#d6336c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Birthday Challenge">
+<title>The Girl I Love — Birthday Challenge 🎂</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div id="hearts-bg" aria-hidden="true"></div>
+
+<!-- ═══════════ SPLASH ═══════════ -->
+<section id="screen-splash" class="screen active">
+  <div class="splash-inner">
+    <div class="splash-cake" id="dev-cake" title="🎂">🎂</div>
+    <h1 class="game-title">The Girl I Love</h1>
+    <p class="game-subtitle">Birthday Challenge 🎂</p>
+    <div class="splash-stats">
+      <span class="pill" id="splash-level">Level 1</span>
+      <span class="pill" id="splash-streak">🔥 0</span>
+    </div>
+    <button class="btn btn-primary btn-big" id="btn-start">Tap to Start</button>
+    <p class="splash-hint" id="splash-her-name"></p>
+  </div>
+</section>
+
+<!-- ═══════════ MAP ═══════════ -->
+<section id="screen-map" class="screen">
+  <header class="topbar">
+    <span class="pill" id="map-lives">❤️ 5</span>
+    <span class="pill" id="map-stars">⭐ 0</span>
+    <span class="pill" id="map-cakes">🎂 0</span>
+    <span class="pill" id="map-streak">🔥 0</span>
+    <button class="icon-btn" id="btn-settings" aria-label="Settings">⚙️</button>
+  </header>
+  <div class="map-scroll" id="map-scroll">
+    <div class="map-path" id="map-path"></div>
+  </div>
+  <div class="map-footer">
+    <button class="btn btn-secondary" id="btn-dashboard">Wish Board 💝</button>
+  </div>
+</section>
+
+<!-- ═══════════ GAME ═══════════ -->
+<section id="screen-game" class="screen">
+  <header class="game-top">
+    <button class="icon-btn" id="btn-pause" aria-label="Pause">⏸️</button>
+    <div class="objective-chip" id="hud-objective">💗 0/10</div>
+    <div class="moves-chip" id="hud-moves">25</div>
+  </header>
+  <div class="board-wrap" id="board-wrap">
+    <canvas id="board-canvas"></canvas>
+  </div>
+  <footer class="game-bottom">
+    <div class="streak-mini" id="hud-streak">🔥 0</div>
+    <div class="booster-bar" id="booster-bar"></div>
+  </footer>
+</section>
+
+<!-- ═══════════ DASHBOARD ═══════════ -->
+<section id="screen-dashboard" class="screen">
+  <header class="topbar">
+    <button class="icon-btn" id="btn-dash-back" aria-label="Back">←</button>
+    <h2 class="topbar-title">Wish Board</h2>
+    <span class="pill" id="dash-cakes">🎂 0</span>
+  </header>
+  <div class="tabs">
+    <button class="tab active" data-tab="wishes">My Wishes 💝</button>
+    <button class="tab" data-tab="dares">My Dares 🎲</button>
+  </div>
+  <div class="tab-body">
+    <ul class="card-list" id="wishes-list"></ul>
+    <ul class="card-list" id="dares-list" hidden></ul>
+  </div>
+</section>
+
+<!-- ═══════════ SETTINGS ═══════════ -->
+<section id="screen-settings" class="screen">
+  <header class="topbar">
+    <button class="icon-btn" id="btn-set-back" aria-label="Back">←</button>
+    <h2 class="topbar-title">Settings</h2>
+    <span class="pill invisible">⚙️</span>
+  </header>
+  <div class="settings-body">
+    <div class="setting-row">
+      <span>Sound effects</span>
+      <button class="toggle on" id="tg-sound" role="switch"><span class="knob"></span></button>
+    </div>
+    <div class="setting-row">
+      <span>Jingles &amp; fanfares</span>
+      <button class="toggle on" id="tg-music" role="switch"><span class="knob"></span></button>
+    </div>
+    <div class="setting-row">
+      <span>Retry costs a life</span>
+      <button class="toggle" id="tg-lives" role="switch"><span class="knob"></span></button>
+    </div>
+    <div class="setting-row setting-input">
+      <label for="in-her">Her name</label>
+      <input id="in-her" type="text" maxlength="20" placeholder="Her name">
+    </div>
+    <div class="setting-row setting-input">
+      <label for="in-his">Your name</label>
+      <input id="in-his" type="text" maxlength="20" placeholder="Your name">
+    </div>
+    <div class="setting-actions">
+      <button class="btn btn-secondary" id="btn-export">Backup progress 💾</button>
+      <button class="btn btn-secondary" id="btn-import">Restore progress 📥</button>
+      <button class="btn btn-danger" id="btn-reset">Reset everything</button>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ MODALS ═══════════ -->
+
+<div class="modal" id="modal-level-intro">
+  <div class="modal-card spring">
+    <div class="intro-level" id="intro-level">Level 1</div>
+    <div class="intro-objective" id="intro-objective">Collect 15 💗</div>
+    <div class="intro-moves">🎯 <span id="intro-moves">25</span> moves</div>
+    <div id="intro-booster-pick" class="booster-pick" hidden>
+      <p class="pick-label">Pick your free booster</p>
+      <div class="pick-options" id="pick-options"></div>
+    </div>
+    <button class="btn btn-primary btn-big" id="btn-play">Play</button>
+    <button class="btn btn-ghost" id="btn-intro-cancel">Back</button>
+  </div>
+</div>
+
+<div class="modal" id="modal-win">
+  <div class="modal-card spring win-card">
+    <canvas class="confetti" id="win-confetti"></canvas>
+    <div class="win-title">You Win! 🎉</div>
+    <div class="star-row" id="win-stars"><span class="star">★</span><span class="star">★</span><span class="star">★</span></div>
+    <div class="cake-earned" id="win-cakes">+0 🎂</div>
+    <div class="wish-panel" id="wish-panel">
+      <p class="wish-heading">You won! Now tell me what I should do 😏</p>
+      <textarea id="wish-text" maxlength="200" rows="3" placeholder="Type anything you want..."></textarea>
+      <div class="chips" id="wish-chips">
+        <button class="chip" data-cat="Sweet">Sweet</button>
+        <button class="chip" data-cat="Favor">Favor</button>
+        <button class="chip" data-cat="Date">Date</button>
+        <button class="chip" data-cat="Food">Food</button>
+        <button class="chip" data-cat="Photo">Photo</button>
+        <button class="chip" data-cat="Funny">Funny</button>
+      </div>
+      <button class="btn btn-primary" id="btn-wish-save">Save my wish 💝</button>
+      <button class="btn btn-ghost" id="btn-wish-skip">Skip</button>
+    </div>
+    <div class="wish-saved" id="wish-saved" hidden>
+      <div class="saved-emoji">😌</div>
+      <p>Wish saved! I promise</p>
+      <button class="btn btn-primary" id="btn-win-next">Continue</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="modal-lose">
+  <div class="modal-card spring">
+    <div class="lose-title">Oops! 🙈</div>
+    <p class="lose-sub">The game picks this one for YOU 🎲</p>
+    <div class="flip-scene">
+      <div class="flip-card" id="lose-flip">
+        <div class="flip-front">🎁</div>
+        <div class="flip-back" id="lose-dare">...</div>
+      </div>
+    </div>
+    <button class="btn btn-primary" id="btn-dare-ok">Okay, I'll do it 🙈</button>
+    <button class="btn btn-secondary" id="btn-retry">Retry level</button>
+  </div>
+</div>
+
+<div class="modal" id="modal-streak">
+  <div class="modal-card spring streak-card">
+    <canvas class="confetti" id="streak-confetti"></canvas>
+    <div class="streak-big">🏆</div>
+    <div class="streak-line">SECRET LOCKED</div>
+    <div class="streak-line2">10 WINS IN A ROW</div>
+    <div class="flip-scene">
+      <div class="flip-card" id="streak-flip">
+        <div class="flip-front">🔒</div>
+        <div class="flip-back" id="streak-dare">...</div>
+      </div>
+    </div>
+    <button class="btn btn-primary" id="btn-streak-ok">Enjoy 😈</button>
+  </div>
+</div>
+
+<div class="modal" id="modal-finale">
+  <div class="modal-card spring finale-card">
+    <canvas class="confetti" id="finale-confetti"></canvas>
+    <div class="finale-cake">🎂</div>
+    <p class="finale-msg" id="finale-msg"></p>
+    <button class="btn btn-primary" id="btn-finale-ok">💝</button>
+  </div>
+</div>
+
+<div class="modal" id="modal-pause">
+  <div class="modal-card spring">
+    <div class="lose-title">Paused ⏸️</div>
+    <button class="btn btn-primary" id="btn-resume">Keep playing</button>
+    <button class="btn btn-secondary" id="btn-quit">Back to map</button>
+  </div>
+</div>
+
+<div class="modal" id="modal-dev">
+  <div class="modal-card dev-card spring">
+    <div class="dev-title">🛠️ Developer Panel</div>
+    <label class="dev-label">My Dares (one per line)</label>
+    <textarea id="dev-myDares" rows="6"></textarea>
+    <label class="dev-label">Special Dares (one per line)</label>
+    <textarea id="dev-specialDares" rows="5"></textarea>
+    <label class="dev-label">Finale message</label>
+    <textarea id="dev-finale" rows="2"></textarea>
+    <div class="setting-row">
+      <span>Instant win (testing)</span>
+      <button class="toggle" id="tg-instant" role="switch"><span class="knob"></span></button>
+    </div>
+    <div class="dev-actions">
+      <button class="btn btn-primary" id="btn-dev-save">Save content</button>
+      <button class="btn btn-secondary" id="btn-dev-export">Export data</button>
+      <button class="btn btn-secondary" id="btn-dev-import">Import data</button>
+      <button class="btn btn-danger" id="btn-dev-reset">Reset all</button>
+    </div>
+    <button class="btn btn-ghost" id="btn-dev-close">Close</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<canvas id="fx-canvas" aria-hidden="true"></canvas>
+
+<script src="js/storage.js"></script>
+<script src="js/content.js"></script>
+<script src="js/levels.js"></script>
+<script src="js/board.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/render.js"></script>
+<script src="js/rewards.js"></script>
+<script src="js/dashboard.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
