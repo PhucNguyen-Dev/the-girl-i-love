@@ -1,5 +1,5 @@
 /* sw.js — offline-first cache for The Girl I Love 🎂 */
-var CACHE = "tgl-v2";
+var CACHE = "tgl-v3";
 var ASSETS = [
   "./",
   "./index.html",

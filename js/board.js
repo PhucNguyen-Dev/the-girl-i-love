@@ -53,7 +53,8 @@
       if (p1) s.grid[p1.r][p1.c].tile.special = "bomb";
     }
     if (opts.rainbowInHand) {
-      var p2 = randomCell(s, true);
+      var p2 = randomCell(s, true), g2 = 0;
+      while (p1 && p2 && p2.r === p1.r && p2.c === p1.c && g2++ < 10) p2 = randomCell(s, true);
       if (p2) s.grid[p2.r][p2.c].tile.special = "rainbow";
     }
 
@@ -513,6 +514,47 @@
     return false;
   }
 
+  // random hint: returns {a, b, match:[cells]} or null.
+  // match = the tiles that will clear (3+ for normal swaps, 2 for special combos).
+  function findHint(s) {
+    var hints = [];
+    for (var r = 0; r < s.h; r++) {
+      for (var c = 0; c < s.w; c++) {
+        var a = { r: r, c: c };
+        var dirs = [[0,1],[1,0]];
+        for (var d = 0; d < 2; d++) {
+          var rr = r + dirs[d][0], cc = c + dirs[d][1];
+          if (rr >= s.h || cc >= s.w) continue;
+          var b = { r: rr, c: cc };
+          var ta = s.grid[a.r][a.c].tile, tb = s.grid[b.r][b.c].tile;
+          if (!ta || !tb) continue;
+          if (ta.special === "rainbow" || tb.special === "rainbow" || isComboSwap(ta, tb)) {
+            hints.push({ a: a, b: b, match: [a, b] });
+            continue;
+          }
+          if (wouldMatch(s, a, b)) {
+            swapTiles(s, a, b);
+            var comps = findMatchGroups(s);
+            swapTiles(s, a, b);
+            var pick = null;
+            for (var i = 0; i < comps.length; i++) {
+              var comp = comps[i];
+              for (var j = 0; j < comp.length; j++) {
+                var p = comp[j];
+                if ((p.r === a.r && p.c === a.c) || (p.r === b.r && p.c === b.c)) { pick = comp; break; }
+              }
+              if (pick) break;
+            }
+            if (!pick && comps.length) pick = comps[0];
+            if (pick) hints.push({ a: a, b: b, match: pick.slice() });
+          }
+        }
+      }
+    }
+    if (!hints.length) return null;
+    return hints[randInt(hints.length)];
+  }
+
   function reshuffle(s) {
     var tiles = [];
     var positions = [];
@@ -673,6 +715,7 @@
     progressText: progressText,
     starsFor: starsFor,
     hasAnyMove: hasAnyMove,
+    findHint: findHint,
     _internal: {
       findMatchGroups: findMatchGroups,
       expandClear: expandClear,

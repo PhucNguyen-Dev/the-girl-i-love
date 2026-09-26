@@ -16,9 +16,12 @@ Edit the dare lists (one per line) and the finale message → *Save content*.
 
 ## Features
 
+- Opening story 💌 (first launch) + in-game tutorial swipe guide
 - 15 hand-tuned levels (collect / clear / blockers) with ★ star ratings
+- Endless Challenge ∞ after level 15 — procedural levels, wish panel every 5th win
 - 🎂 cake currency: hammer 🔨 (15), shuffle 🔀 (10), +5 moves ➕ (20)
-- Wish Board 💝 — she writes wishes, you tick them off
+- Booster Shop 🛍️ — stockpile boosters with cakes; stock is used before cake pay-per-use
+- Idle hint after 10s, pre-level boosters (levels ≥5), wish Board 💝
 - Lose dares 🎲, 10-win streak secret 🏆, level-15 finale
 - Lives toggle (off by default), settings, backup/restore, reset
 - Installable offline PWA, touch-first, safe-area aware
@@ -26,7 +29,7 @@ Edit the dare lists (one per line) and the finale message → *Save content*.
 ## Development
 
 ```bash
-node --test tests/board.test.js   # engine tests (21)
+node --test tests/board.test.js   # engine tests (25)
 ```
 
 - Engine is pure (`js/board.js`) — no DOM, fully covered by tests.

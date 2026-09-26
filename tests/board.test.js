@@ -309,6 +309,117 @@ test("deadlock pattern detected; reshuffle fixes it", () => {
   assert.ok(Board.hasAnyMove(s), "reshuffle left no moves");
 });
 
+/* ── hints ─────────────────────────────────── */
+
+function swapCells(state, a, b) {
+  const t = state.grid[a.r][a.c].tile;
+  state.grid[a.r][a.c].tile = state.grid[b.r][b.c].tile;
+  state.grid[b.r][b.c].tile = t;
+}
+
+test("findHint: valid swap, clears 3+, never mutates the board", () => {
+  for (let n = 1; n <= 15; n++) {
+    for (let trial = 0; trial < 5; trial++) {
+      const s = Board.create(Levels.get(n));
+      const before = gridIds(s);
+      const hint = Board.findHint(s);
+      assert.ok(hint, `level ${n} trial ${trial}: no hint found`);
+      assert.deepStrictEqual(gridIds(s), before, "findHint mutated the board");
+      assert.strictEqual(
+        Math.abs(hint.a.r - hint.b.r) + Math.abs(hint.a.c - hint.b.c), 1,
+        "hint swap must be adjacent");
+      const ta = s.grid[hint.a.r][hint.a.c].tile;
+      const tb = s.grid[hint.b.r][hint.b.c].tile;
+      const isSpecialSwap = ta.special === "rainbow" || tb.special === "rainbow" || (ta.special && tb.special);
+      if (!isSpecialSwap) {
+        swapCells(s, hint.a, hint.b);
+        assert.ok(Board._internal.findMatchGroups(s).length > 0, "hint swap creates no match");
+        swapCells(s, hint.a, hint.b);
+        assert.ok(hint.match.length >= 3, "normal hint should clear at least 3");
+        const touchesSwap = hint.match.some(p =>
+          (p.r === hint.a.r && p.c === hint.a.c) || (p.r === hint.b.r && p.c === hint.b.c));
+        assert.ok(touchesSwap, "hint match should include a swapped cell");
+      } else {
+        assert.strictEqual(hint.match.length, 2, "special swap hint shows both cells");
+      }
+    }
+  }
+});
+
+test("findHint: null on deadlocked board; rainbow adjacency hinted", () => {
+  const s = Board.create(Levels.get(1));
+  for (let r = 0; r < s.h; r++)
+    for (let c = 0; c < s.w; c++)
+      setT(s, r, c, (Math.floor(r / 2) + Math.floor(c / 2) + 2 * (r % 2) + 2 * (c % 2)) % 3);
+
+  assert.strictEqual(Board.findHint(s), null, "dead board should have no hint");
+
+  setT(s, 0, 0, 0, "rainbow");
+  const hint = Board.findHint(s);
+  assert.ok(hint, "rainbow should create a hint");
+  const involvesRainbow = (hint.a.r === 0 && hint.a.c === 0) || (hint.b.r === 0 && hint.b.c === 0);
+  assert.ok(involvesRainbow, "only valid move is swapping the rainbow");
+  assert.strictEqual(hint.match.length, 2);
+});
+
+/* ── endless generator ────────────────────── */
+
+test("endless: valid shape, scaling difficulty, engine-ready", () => {
+  for (let L = 1; L <= 24; L++) {
+    const lv = Levels.endless(L);
+    assert.strictEqual(lv.w, 7, `loop ${L} width`);
+    assert.strictEqual(lv.h, 7, `loop ${L} height`);
+    assert.strictEqual(lv.n, 15 + L, `loop ${L} number`);
+    assert.ok(lv.moves >= 16 && lv.moves <= 24, `loop ${L} moves ${lv.moves}`);
+    assert.ok(Levels.describe(lv).length > 0, `loop ${L} describe`);
+
+    const seen = new Set();
+    for (const b of lv.blockers) {
+      assert.ok(b[0] >= 0 && b[0] < 7 && b[1] >= 0 && b[1] < 7, `loop ${L} blocker bounds`);
+      assert.ok(b[2] === 1 || b[2] === 2, `loop ${L} blocker hp`);
+      const k = b[0] + "," + b[1];
+      assert.ok(!seen.has(k), `loop ${L} duplicate blocker`);
+      seen.add(k);
+    }
+    if (lv.objective.type === "blockers") {
+      assert.ok(lv.blockers.length >= 5, `loop ${L} blockers objective needs boxes`);
+    }
+
+    const s = Board.create(lv);
+    assertBoardSolid(s);
+    assert.strictEqual(Board._internal.findMatchGroups(s).length, 0, `loop ${L} pre-matches`);
+    assert.ok(Board.hasAnyMove(s), `loop ${L} no moves`);
+    assert.ok(Board.findHint(s), `loop ${L} no hint`);
+    assert.strictEqual(s.stats.blockersTotal, lv.blockers.length, `loop ${L} blocker count`);
+  }
+});
+
+test("endless: objectives rotate and scale with loop", () => {
+  const kinds = [];
+  for (let L = 1; L <= 8; L++) kinds.push(Levels.endless(L).objective.type);
+  assert.deepStrictEqual(kinds, ["collect", "clear", "collect", "blockers",
+    "collect", "clear", "collect", "blockers"]);
+
+  const a = Levels.endless(1).objective, b = Levels.endless(5).objective;
+  assert.strictEqual(a.type, "collect");
+  assert.strictEqual(b.type, "collect");
+  assert.ok(b.count > a.count, "collect target grows");
+
+  assert.ok(Levels.endless(6).objective.count > Levels.endless(2).objective.count,
+    "clear target grows");
+
+  let prev = Infinity;
+  for (let L = 1; L <= 30; L++) {
+    const m = Levels.endless(L).moves;
+    assert.ok(m <= prev, `moves should tighten at loop ${L}`);
+    assert.ok(m >= 16, `moves floor at loop ${L}`);
+    prev = m;
+  }
+
+  assert.ok(Levels.endless(4).blockers.length > Levels.endless(1).blockers.length,
+    "blockers grow");
+});
+
 /* ── economy ──────────────────────────────── */
 
 test("matches award cakes; special-making matches award 2", () => {

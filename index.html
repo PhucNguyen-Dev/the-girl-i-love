@@ -21,6 +21,20 @@
 
 <div id="hearts-bg" aria-hidden="true"></div>
 
+<!-- ═══════════ STORY (first launch) ═══════════ -->
+<section id="screen-story" class="screen">
+  <div class="story-inner">
+    <div class="story-cake">🎂</div>
+    <div class="story-letter">
+      <p class="story-line1">Hey you…</p>
+      <p>I built something just for you.</p>
+      <p>15 levels, a wish board, secret dares —<br>and a few things you can't escape 😏</p>
+      <p class="story-love">Happy birthday, my love 💗</p>
+    </div>
+    <button class="btn btn-primary btn-big" id="btn-story">Let's play 💗</button>
+  </div>
+</section>
+
 <!-- ═══════════ SPLASH ═══════════ -->
 <section id="screen-splash" class="screen active">
   <div class="splash-inner">
@@ -50,6 +64,7 @@
   </div>
   <div class="map-footer">
     <button class="btn btn-secondary" id="btn-dashboard">Wish Board 💝</button>
+    <button class="btn btn-secondary" id="btn-shop">Shop 🛍️</button>
   </div>
 </section>
 
@@ -62,6 +77,7 @@
   </header>
   <div class="board-wrap" id="board-wrap">
     <canvas id="board-canvas"></canvas>
+    <div class="tut-hand" id="tut-hand" hidden>👉</div>
   </div>
   <footer class="game-bottom">
     <div class="streak-mini" id="hud-streak">🔥 0</div>
@@ -84,6 +100,17 @@
     <ul class="card-list" id="wishes-list"></ul>
     <ul class="card-list" id="dares-list" hidden></ul>
   </div>
+</section>
+
+<!-- ═══════════ SHOP ═══════════ -->
+<section id="screen-shop" class="screen">
+  <header class="topbar">
+    <button class="icon-btn" id="btn-shop-back" aria-label="Back">←</button>
+    <h2 class="topbar-title">Shop 🛍️</h2>
+    <span class="pill" id="shop-cakes">🎂 0</span>
+  </header>
+  <div class="shop-body" id="shop-body"></div>
+  <div class="shop-hint">Win levels to earn 🎂 — boosters are used automatically in-game when you have stock.</div>
 </section>
 
 <!-- ═══════════ SETTINGS ═══════════ -->

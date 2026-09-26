@@ -9,7 +9,10 @@
     streak: "tgl_streak",
     settings: "tgl_settings",
     revealed: "tgl_dares_revealed",
-    hearts: "tgl_hearts"
+    hearts: "tgl_hearts",
+    stock: "tgl_stock",
+    endless: "tgl_endless",
+    seenIntro: "tgl_seen_intro"
   };
 
   var STAR_MULT = { 0: 1.0, 1: 1.10, 2: 1.15, 3: 1.25 };
@@ -165,6 +168,59 @@
       var list = Rewards.wishes().filter(function (w) { return w.id !== id; });
       TGL.Storage.set(K.wishes, list);
     },
+
+    /* ── booster stock (shop) ── */
+    stock: function () {
+      var s = TGL.Storage.get(K.stock, null);
+      if (!s || typeof s !== "object") s = { hammer: 0, shuffle: 0, moves: 0 };
+      ["hammer", "shuffle", "moves"].forEach(function (k) {
+        if (typeof s[k] !== "number" || s[k] < 0) s[k] = 0;
+      });
+      return s;
+    },
+
+    buyStock: function (kind, price) {
+      var p = progress();
+      if (p.cakes < price) return false;
+      p.cakes -= price;
+      saveProgress(p);
+      var s = Rewards.stock();
+      s[kind] = (s[kind] || 0) + 1;
+      TGL.Storage.set(K.stock, s);
+      return true;
+    },
+
+    useStock: function (kind) {
+      var s = Rewards.stock();
+      if (!s[kind]) return false;
+      s[kind]--;
+      TGL.Storage.set(K.stock, s);
+      return true;
+    },
+
+    /* ── endless challenge ── */
+    endless: function () {
+      var e = TGL.Storage.get(K.endless, null);
+      if (!e || typeof e !== "object") e = { loop: 1, wishCount: 0, best: 0 };
+      if (typeof e.loop !== "number" || e.loop < 1) e.loop = 1;
+      if (typeof e.wishCount !== "number" || e.wishCount < 0) e.wishCount = 0;
+      if (typeof e.best !== "number") e.best = 0;
+      return e;
+    },
+
+    // called on every endless win; wish panel shows every 5th win
+    advanceEndless: function () {
+      var e = Rewards.endless();
+      e.loop++;
+      e.wishCount++;
+      e.best = Math.max(e.best, e.loop);
+      TGL.Storage.set(K.endless, e);
+      return { nextLoop: e.loop, showWish: e.wishCount % 5 === 0, best: e.best };
+    },
+
+    /* ── first-launch story ── */
+    seenIntro: function () { return !!TGL.Storage.get(K.seenIntro, false); },
+    markIntroSeen: function () { TGL.Storage.set(K.seenIntro, true); },
 
     /* ── backup / restore / reset ── */
     exportAll: function () {

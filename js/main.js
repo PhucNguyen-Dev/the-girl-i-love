@@ -9,6 +9,8 @@
   var app = {
     screen: "splash",
     level: 1,
+    mode: "story",   // story | endless
+    loop: 1,         // endless loop number
     state: null,
     selected: null,
     pendingSwap: null,
@@ -16,6 +18,8 @@
     hammerArmed: false,
     chosenBooster: null,
     winCtx: null,
+    lastInput: 0,
+    hintOn: false,
     devTaps: 0,
     devTapLast: 0,
     devTapTimer: null
@@ -38,6 +42,10 @@
       s.classList.toggle("active", s.id === "screen-" + name);
     });
     app.screen = name;
+    if (name !== "game") {
+      var hand = $("tut-hand");
+      if (hand) hand.hidden = true;
+    }
     if (name === "map") renderMap();
     if (name === "splash") updateSplash();
     TGL.Audio.play("tap");
@@ -63,6 +71,89 @@
 
   function adjacent(a, b) {
     return Math.abs(a.r - b.r) + Math.abs(a.c - b.c) === 1;
+  }
+
+  function markInput() {
+    app.lastInput = Date.now();
+    clearHint();
+  }
+
+  function clearHint() {
+    Render.setHint(null);
+    app.hintOn = false;
+  }
+
+  // idle hint: 10s with no input → pulse a random valid match
+  function idleTick() {
+    if (app.screen !== "game" || app.modalOpen || !app.state) {
+      if (app.hintOn) clearHint();
+      return;
+    }
+    if (Render.isBusy() || app.hammerArmed) return;
+    if (Date.now() - app.lastInput < 10000) { if (app.hintOn) clearHint(); return; }
+    if (app.hintOn) return;
+    var h = Board.findHint(app.state);
+    if (h) { Render.setHint(h); app.hintOn = true; }
+  }
+
+  /* ── first-time tutorial ──────────────────── */
+
+  function tut(name) {
+    var f = TGL.Storage.get("tgl_tut", null);
+    return !!(f && typeof f === "object" && f[name]);
+  }
+
+  function tutDone(name) {
+    var f = TGL.Storage.get("tgl_tut", null);
+    if (!f || typeof f !== "object") f = {};
+    f[name] = true;
+    TGL.Storage.set("tgl_tut", f);
+  }
+
+  function startTutorialSwipe() {
+    if (app.mode !== "story" || app.level !== 1 || tut("swipe")) return;
+    setTimeout(function () {
+      if (app.screen !== "game" || app.modalOpen || !app.state) return;
+      var h = Board.findHint(app.state);
+      if (!h) return;
+      Render.setHint(h);
+      app.hintOn = true;
+      positionHand(h);
+      toast("Swipe two tiles to swap 👇", 3600);
+    }, 450);
+  }
+
+  function positionHand(h) {
+    var hand = $("tut-hand");
+    var wrap = $("board-wrap").getBoundingClientRect();
+    var cv = $("board-canvas").getBoundingClientRect();
+    var cw = cv.width / app.state.w, ch = cv.height / app.state.h;
+    function at(p) {
+      return {
+        x: cv.left - wrap.left + (p.c + 0.5) * cw - 23,
+        y: cv.top - wrap.top + (p.r + 0.5) * ch - 23
+      };
+    }
+    var a = at(h.a), b = at(h.b);
+    hand.style.setProperty("--ax", a.x + "px");
+    hand.style.setProperty("--ay", a.y + "px");
+    hand.style.setProperty("--bx", b.x + "px");
+    hand.style.setProperty("--by", b.y + "px");
+    hand.hidden = false;
+  }
+
+  function hideHand() {
+    var hand = $("tut-hand");
+    if (!hand.hidden) {
+      hand.hidden = true;
+      if (!tut("swipe")) {
+        tutDone("swipe");
+        if (!tut("objective")) {
+          tutDone("objective");
+          toast("Match 3 goal tiles 💗 to collect them!", 3400);
+        }
+      }
+    }
   }
 
   /* ── splash & hearts ──────────────────────── */
@@ -98,13 +189,20 @@
     var path = $("map-path");
     var p = Rewards.progress();
     path.innerHTML = "";
-    var last = layout[layout.length - 1];
+
+    var nodes = layout.slice();
+    var storyDone = p.stars[Levels.count] != null;
+    if (storyDone) {
+      var ep = Levels.nodePos(layout.length);
+      nodes.push({ n: Levels.count + 1, x: ep.x, y: ep.y, endless: true });
+    }
+    var last = nodes[nodes.length - 1];
     path.style.height = (last.y + 110) + "px";
 
     // dashed connectors
     var w = $("map-scroll").clientWidth || 360;
-    for (var i = 0; i < layout.length - 1; i++) {
-      var a = layout[i], b = layout[i + 1];
+    for (var i = 0; i < nodes.length - 1; i++) {
+      var a = nodes[i], b = nodes[i + 1];
       var x1 = w * a.x / 100, y1 = a.y;
       var x2 = w * b.x / 100, y2 = b.y;
       var len = Math.hypot(x2 - x1, y2 - y1);
@@ -118,7 +216,25 @@
       path.appendChild(line);
     }
 
-    layout.forEach(function (n) {
+    nodes.forEach(function (n) {
+      if (n.endless) {
+        var e = Rewards.endless();
+        var node = document.createElement("button");
+        node.className = "map-node current endless-node";
+        node.style.left = n.x + "%";
+        node.style.top = n.y + "px";
+        node.innerHTML = "∞";
+        var st = document.createElement("span");
+        st.className = "map-stars";
+        st.textContent = "Loop " + e.loop;
+        node.appendChild(st);
+        node.addEventListener("click", function () {
+          TGL.Audio.play("tap");
+          openEndlessIntro();
+        });
+        path.appendChild(node);
+        return;
+      }
       var done = n.n < p.level || (n.n === p.level && p.stars[n.n] != null && n.n === Levels.count);
       var current = n.n === p.level && !(p.stars[n.n] != null && n.n === Levels.count);
       var locked = n.n > p.level;
@@ -142,10 +258,12 @@
     });
 
     // scroll current node into view
-    var cur = layout[Math.min(p.level, Levels.count) - 1];
+    var curY = storyDone
+      ? nodes[nodes.length - 1].y
+      : layout[Math.min(p.level, Levels.count) - 1].y;
     var scroll = $("map-scroll");
     setTimeout(function () {
-      scroll.scrollTop = Math.max(0, cur.y - scroll.clientHeight / 2);
+      scroll.scrollTop = Math.max(0, curY - scroll.clientHeight / 2);
     }, 60);
   }
 
@@ -166,18 +284,16 @@
     { id: "rainbow", icon: "🌈", name: "Rainbow" }
   ];
 
-  function openLevelIntro(n) {
-    app.level = n;
+  function fillIntro(lvl, title) {
     app.chosenBooster = null;
-    var lvl = Levels.get(n);
-    $("intro-level").textContent = "Level " + n;
+    $("intro-level").textContent = title;
     $("intro-objective").textContent = Levels.describe(lvl);
     $("intro-moves").textContent = lvl.moves;
 
     var pick = $("intro-booster-pick");
     var opts = $("pick-options");
     opts.innerHTML = "";
-    if (n >= 5) {
+    if (lvl.n >= 5) {
       pick.hidden = false;
       BOOSTER_DEFS.forEach(function (b) {
         var btn = document.createElement("button");
@@ -195,13 +311,28 @@
     } else {
       pick.hidden = true;
     }
+  }
+
+  function openLevelIntro(n) {
+    app.mode = "story";
+    app.loop = 1;
+    app.level = n;
+    fillIntro(Levels.get(n), "Level " + n);
+    openModal("modal-level-intro");
+  }
+
+  function openEndlessIntro() {
+    app.mode = "endless";
+    app.loop = Rewards.endless().loop;
+    app.level = Levels.count + app.loop;
+    fillIntro(Levels.endless(app.loop), "Challenge " + app.level + "  ·  Loop " + app.loop);
     openModal("modal-level-intro");
   }
 
   /* ── start / HUD / booster bar ────────────── */
 
   function startLevel() {
-    var lvl = Levels.get(app.level);
+    var lvl = app.mode === "endless" ? Levels.endless(app.loop) : Levels.get(app.level);
     var opts = {};
     if (app.chosenBooster === "moves") opts.extraMoves = 5;
     if (app.chosenBooster === "bomb") opts.startBomb = true;
@@ -212,6 +343,7 @@
     app.pendingSwap = null;
     app.hammerArmed = false;
     app.winCtx = null;
+    markInput();
 
     closeAllModals();
     showScreen("game");
@@ -220,6 +352,7 @@
     Render.setHammerMode(false);
     updateHUD();
     renderBoosterBar();
+    startTutorialSwipe();
   }
 
   function updateHUD() {
@@ -246,11 +379,14 @@
       });
     }
     var cakes = Rewards.progress().cakes;
+    var stock = Rewards.stock();
     bar.querySelectorAll(".booster-btn").forEach(function (b) {
       var cost = PRICE[b.dataset.b];
-      b.classList.toggle("poor", cakes < cost);
+      var s = stock[b.dataset.b] || 0;
+      b.classList.toggle("has-stock", s > 0);
+      b.classList.toggle("poor", !s && cakes < cost);
       b.classList.toggle("armed", b.dataset.b === "hammer" && app.hammerArmed);
-      b.querySelector(".b-cost").textContent = cost + " 🎂";
+      b.querySelector(".b-cost").textContent = s > 0 ? "\u00d7" + s : cost + " 🎂";
     });
   }
 
@@ -270,8 +406,14 @@
     return true;
   }
 
+  function spendOrStock(kind, price) {
+    if (Rewards.useStock(kind)) { TGL.Audio.play("tap"); updateHUD(); return true; }
+    return spendCakes(price);
+  }
+
   function useBooster(kind) {
     if (app.screen !== "game" || app.modalOpen || !app.state) return;
+    markInput();
     if (Render.isBusy()) { toast("Wait for the board to settle ⏳", 1400); return; }
 
     if (kind === "hammer") {
@@ -282,8 +424,11 @@
         renderBoosterBar();
         return;
       }
-      var cakes = Rewards.progress().cakes;
-      if (cakes < PRICE.hammer) { toast("Not enough 🎂 — win more levels!"); TGL.Audio.play("invalid"); return; }
+      if (!Rewards.stock().hammer && Rewards.progress().cakes < PRICE.hammer) {
+        toast("Not enough 🎂 — win more levels or shop 🛍️!");
+        TGL.Audio.play("invalid");
+        return;
+      }
       app.hammerArmed = true;
       Render.setHammerMode(true);
       renderBoosterBar();
@@ -292,13 +437,13 @@
     }
 
     if (kind === "shuffle") {
-      if (!spendCakes(PRICE.shuffle)) return;
+      if (!spendOrStock("shuffle", PRICE.shuffle)) return;
       runSteps(Board.shuffle(app.state));
       return;
     }
 
     if (kind === "moves") {
-      if (!spendCakes(PRICE.moves)) return;
+      if (!spendOrStock("moves", PRICE.moves)) return;
       app.state.movesLeft += 5;
       TGL.Audio.play("special");
       toast("+5 moves! ➕");
@@ -307,7 +452,19 @@
   }
 
   function doHammer(cell) {
-    if (!spendCakes(PRICE.hammer)) { app.hammerArmed = false; Render.setHammerMode(false); renderBoosterBar(); return; }
+    var stock = Rewards.stock();
+    if (stock.hammer > 0) {
+      Rewards.useStock("hammer");
+    } else if (Rewards.progress().cakes < PRICE.hammer) {
+      toast("Not enough 🎂 — win more levels or shop 🛍️!");
+      TGL.Audio.play("invalid");
+      app.hammerArmed = false;
+      Render.setHammerMode(false);
+      renderBoosterBar();
+      return;
+    } else {
+      spendCakes(PRICE.hammer);
+    }
     app.hammerArmed = false;
     Render.setHammerMode(false);
     var res = Board.hammer(app.state, cell);
@@ -320,6 +477,8 @@
 
   function onBoardInput(evt) {
     if (app.screen !== "game" || app.modalOpen || !app.state) return;
+    markInput();
+    hideHand();
     if (Render.isBusy()) {
       if (evt.type === "swipe") app.pendingSwap = evt; // spec: queue the next swap during falls
       return;
@@ -352,6 +511,7 @@
   }
 
   function runSteps(res) {
+    clearHint();
     if (!res || !res.steps || !res.steps.length) { afterSteps(res); return; }
     var clearIdx = 0;
     var valid = res.valid;
@@ -379,6 +539,10 @@
       drainPending();
       return;
     }
+    if (app.mode === "story" && app.level <= 3 && !tut("booster")) {
+      tutDone("booster");
+      toast("Tip: 🔨 smash · 🔀 shuffle · ➕ moves — free from stock, or buy in Shop 🛍️", 4200);
+    }
     var s = app.state;
     var instant = Rewards.settings().instantWin;
     if (Board.objectiveDone(s) || instant) { winFlow(); return; }
@@ -405,12 +569,17 @@
   function winFlow() {
     var s = app.state;
     var stars = Board.starsFor(s);
-    var result = Rewards.win(app.level, stars, s.cakes);
+    var endless = app.mode === "endless";
+    var levelNum = endless ? Levels.count + app.loop : app.level;
+    var result = Rewards.win(levelNum, stars, s.cakes);
+    var adv = endless ? Rewards.advanceEndless() : null;
     app.winCtx = {
       stars: stars,
       payout: result.payout,
       secret: result.secret,
-      finale: app.level === Levels.count,
+      finale: !endless && app.level === Levels.count,
+      wishOff: endless && !adv.showWish,
+      loop: endless ? app.loop : 0,
       wishDone: false
     };
     app.pendingSwap = null;
@@ -421,6 +590,10 @@
     $("wish-chips").querySelectorAll(".chip").forEach(function (c) { c.classList.remove("on"); });
     $("wish-panel").hidden = true;
     $("wish-saved").hidden = true;
+    var se = $("wish-saved").querySelector(".saved-emoji");
+    var sp = $("wish-saved").querySelector("p");
+    if (se) se.textContent = "😌";
+    if (sp) sp.textContent = "Wish saved! I promise";
 
     openModal("modal-win");
     TGL.Render.confettiOn($("win-confetti"), 5200);
@@ -437,9 +610,25 @@
 
     setTimeout(function () {
       if (!app.winCtx || app.modalOpen !== "modal-win") return;
-      if (app.winCtx.secret) showSecret();
-      else showWishPanel();
+      revealWinStage();
     }, 1500);
+  }
+
+  function revealWinStage() {
+    var ctx = app.winCtx;
+    if (!ctx) return;
+    if (ctx.secret) { showSecret(); return; }
+    if (ctx.wishOff) { showWinContinue(); return; }
+    showWishPanel();
+  }
+
+  function showWinContinue() {
+    $("wish-panel").hidden = true;
+    $("wish-saved").hidden = false;
+    var se = $("wish-saved").querySelector(".saved-emoji");
+    var p = $("wish-saved").querySelector("p");
+    if (se) se.textContent = "🔥";
+    if (p) p.textContent = "Loop " + app.winCtx.loop + " cleared! Every 5th win unlocks a wish.";
   }
 
   function showWishPanel() {
@@ -461,8 +650,8 @@
   function backToWishFromSecret() {
     closeModal("modal-streak");
     openModal("modal-win");
-    $("wish-panel").hidden = false;
     TGL.Render.confettiOn($("win-confetti"), 3600);
+    revealWinStage();
   }
 
   function saveWish() {
@@ -575,6 +764,51 @@
     showScreen("settings");
   }
 
+  /* ── shop ─────────────────────────────────── */
+
+  var SHOP_ITEMS = {
+    hammer: { icon: "🔨", name: "Hammer", desc: "Smash any single tile — no match needed" },
+    shuffle: { icon: "🔀", name: "Shuffle", desc: "Reshuffle the whole board into a fresh layout" },
+    moves: { icon: "➕", name: "+5 Moves", desc: "Five extra moves on the current level" }
+  };
+
+  function openShop() {
+    renderShop();
+    showScreen("shop");
+  }
+
+  function renderShop() {
+    $("shop-cakes").textContent = "🎂 " + Rewards.progress().cakes;
+    var stock = Rewards.stock();
+    var body = $("shop-body");
+    body.innerHTML = "";
+    ["hammer", "shuffle", "moves"].forEach(function (kind) {
+      var it = SHOP_ITEMS[kind];
+      var card = document.createElement("div");
+      card.className = "shop-card";
+      card.innerHTML =
+        '<div class="s-icon">' + it.icon + "</div>" +
+        '<div class="s-name">' + it.name + "</div>" +
+        '<div class="s-desc">' + it.desc + "</div>" +
+        '<div class="s-owned">In stock: ' + stock[kind] + "</div>" +
+        '<button class="btn btn-primary" data-buy="' + kind + '">Buy — ' + PRICE[kind] + " 🎂</button>";
+      body.appendChild(card);
+    });
+    body.querySelectorAll("[data-buy]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var kind = btn.dataset.buy;
+        if (Rewards.buyStock(kind, PRICE[kind])) {
+          TGL.Audio.play("cake");
+          toast("+1 " + SHOP_ITEMS[kind].name + " in stock 🛍️");
+          renderShop();
+        } else {
+          TGL.Audio.play("invalid");
+          toast("Not enough 🎂 — win more levels!");
+        }
+      });
+    });
+  }
+
   /* ── dev panel ────────────────────────────── */
 
   function noteCakeTap() {
@@ -635,6 +869,7 @@
     buildHearts();
     Render.init($("board-canvas"), $("fx-canvas"));
     Render.setInput(onBoardInput);
+    setInterval(idleTick, 500);
     updateSplash();
     registerSW();
 
@@ -646,6 +881,13 @@
       TGL.Audio.play("tap");
       showScreen("map");
     });
+    $("btn-story").addEventListener("click", function () {
+      TGL.Audio.play("tap");
+      Rewards.markIntroSeen();
+      showScreen("map");
+    });
+    $("btn-shop").addEventListener("click", openShop);
+    $("btn-shop-back").addEventListener("click", function () { showScreen("map"); });
     $("dev-cake").addEventListener("click", noteCakeTap);
 
     $("btn-dashboard").addEventListener("click", openDashboard);
@@ -721,7 +963,8 @@
     $("btn-retry").addEventListener("click", function () {
       TGL.Audio.play("tap");
       closeModal("modal-lose");
-      openLevelIntro(app.level);
+      if (app.mode === "endless") openEndlessIntro();
+      else openLevelIntro(app.level);
     });
 
     $("btn-finale-ok").addEventListener("click", function () {
@@ -736,7 +979,8 @@
     $("btn-dev-import").addEventListener("click", importData);
     $("btn-dev-reset").addEventListener("click", resetData);
 
-    showScreen("splash");
+    if (Rewards.seenIntro()) showScreen("splash");
+    else showScreen("story");
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);

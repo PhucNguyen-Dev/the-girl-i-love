@@ -51,12 +51,64 @@
     return nodes;
   }
 
+  function nodePos(i) {
+    return { x: 50 + 30 * Math.sin(i * 0.95), y: 70 + i * 128 };
+  }
+
+  /* ── endless challenge (after story level 15) ──
+     Returns a level object in the exact story shape so the engine,
+     renderer and win flow work untouched. Difficulty scales with loop. */
+  function pickBlockerSpots(count) {
+    var used = {}, out = [], guard = 0;
+    while (out.length < count && guard < 600) {
+      guard++;
+      var r = Math.floor(Math.random() * 7);
+      var c = Math.floor(Math.random() * 7);
+      var k = r + "," + c;
+      if (used[k]) continue;
+      used[k] = 1;
+      out.push([r, c, out.length % 3 === 0 ? 2 : 1]);
+    }
+    return out;
+  }
+
+  function endless(loop) {
+    var L = Math.max(1, Math.floor(loop) || 1);
+    var kind = (L - 1) % 4; // 0/2 collect · 1 clear · 3 blockers
+    var moves = Math.max(16, 24 - Math.floor((L - 1) / 3));
+    var objective, boxCount = 0;
+
+    if (kind === 3) {
+      objective = { type: "blockers" };
+      boxCount = Math.min(4 + L, 14);
+    } else if (kind === 1) {
+      objective = { type: "clear", count: 45 + L * 5 };
+      if (L >= 4) boxCount = Math.min(L - 3, 6);
+    } else {
+      var tile = (L * 2 + kind) % TILES.length;
+      objective = { type: "collect", tile: tile, count: 12 + L * 2 + (kind === 2 ? 4 : 0) };
+      if (L >= 4) boxCount = Math.min(L - 3, 6);
+    }
+
+    return {
+      n: 15 + L,
+      loop: L,
+      w: 7,
+      h: 7,
+      moves: moves,
+      objective: objective,
+      blockers: pickBlockerSpots(boxCount)
+    };
+  }
+
   TGL.Levels = {
     all: LEVELS,
     tiles: TILES,
     get: get,
     describe: describe,
     mapLayout: mapLayout,
+    nodePos: nodePos,
+    endless: endless,
     starMovesLeft: STAR_MOVES_LEFT,
     count: LEVELS.length
   };

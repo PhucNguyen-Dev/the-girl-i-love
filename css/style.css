@@ -200,7 +200,7 @@ button { font-family: var(--font); cursor: pointer; border: none; background: no
 .map-node.locked { background: #f1e3e9; color: #b89aab; box-shadow: 0 5px 0 #e0cdd6; }
 .map-stars { position: absolute; bottom: -18px; font-size: 12px; letter-spacing: 1px; color: var(--gold-dark); text-shadow: 0 1px 0 #fff; }
 .map-line { position: absolute; width: 8px; border-radius: 8px; background: repeating-linear-gradient(180deg, rgba(255,255,255,.9) 0 10px, rgba(255,255,255,0) 10px 20px); transform: translate(-50%,0); z-index: -1; }
-.map-footer { padding: 10px 16px calc(10px + var(--safe-b)); display: flex; justify-content: center; background: linear-gradient(0deg, rgba(255,240,245,.95), transparent); }
+.map-footer { padding: 10px 16px calc(10px + var(--safe-b)); display: flex; justify-content: center; gap: 10px; background: linear-gradient(0deg, rgba(255,240,245,.95), transparent); }
 
 /* ── game ────────────────────────────────────── */
 #screen-game { background: linear-gradient(170deg, #ffe4ef 0%, #ffd9b8 100%); }
@@ -496,3 +496,75 @@ button { font-family: var(--font); cursor: pointer; border: none; background: no
   .splash-cake { font-size: 56px; }
   .btn-big { padding: 13px 34px; font-size: 18px; }
 }
+
+/* ═══════════════════════════════════════════
+   v3 — story intro · tutorial · shop · endless
+   ═══════════════════════════════════════════ */
+
+#screen-story { justify-content: center; }
+.story-inner {
+  display: flex; flex-direction: column; align-items: center; gap: 18px;
+  padding: 28px 24px; margin: 0 auto; max-width: 540px; text-align: center; z-index: 1;
+}
+.story-cake {
+  font-size: 76px; line-height: 1;
+  animation: floaty 3s ease-in-out infinite;
+  filter: drop-shadow(0 8px 16px rgba(214, 51, 108, .35));
+}
+@keyframes floaty {
+  0%, 100% { transform: translateY(0) rotate(-3deg); }
+  50% { transform: translateY(-10px) rotate(3deg); }
+}
+.story-letter {
+  background: rgba(255, 255, 255, .88); border-radius: var(--radius);
+  padding: 24px 22px; box-shadow: var(--shadow);
+  display: flex; flex-direction: column; gap: 12px;
+  font-weight: 600; color: var(--ink); font-size: 17px; line-height: 1.55;
+}
+.story-line1 { font-size: 21px; font-weight: 800; }
+.story-love { color: var(--pink); font-weight: 800; font-size: 19px; }
+
+/* tutorial swipe hand */
+.board-wrap { position: relative; }
+.tut-hand {
+  position: absolute; left: 0; top: 0; font-size: 46px; line-height: 1;
+  pointer-events: none; z-index: 6;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, .35));
+  animation: handSwipe 1.9s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+@keyframes handSwipe {
+  0% { transform: translate(var(--ax, 0), var(--ay, 0)) scale(.95); opacity: 0; }
+  12% { opacity: 1; }
+  40% { transform: translate(var(--bx, 0), var(--by, 0)) scale(1.06); opacity: 1; }
+  55% { transform: translate(var(--bx, 0), var(--by, 0)) scale(1); opacity: 1; }
+  78% { transform: translate(var(--ax, 0), var(--ay, 0)) scale(1); opacity: 1; }
+  100% { transform: translate(var(--ax, 0), var(--ay, 0)) scale(.95); opacity: 0; }
+}
+
+/* shop */
+.map-footer { gap: 10px; }
+.shop-body {
+  flex: 1; overflow-y: auto; display: grid; gap: 14px; align-content: start;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  padding: 16px; padding-bottom: calc(16px + var(--safe-b));
+}
+.shop-card {
+  background: var(--white); border-radius: var(--radius); padding: 18px 16px;
+  box-shadow: var(--shadow-sm); border: 2px solid var(--rose-2);
+  display: flex; flex-direction: column; align-items: center; gap: 7px; text-align: center;
+}
+.shop-card .s-icon { font-size: 48px; line-height: 1; }
+.shop-card .s-name { font-weight: 800; font-size: 18px; color: var(--ink); }
+.shop-card .s-desc { font-size: 14px; color: var(--ink-soft); font-weight: 600; min-height: 40px; }
+.shop-card .s-owned { font-weight: 800; color: var(--pink); font-size: 15px; }
+.shop-hint {
+  padding: 10px 16px calc(14px + var(--safe-b)); font-size: 13px;
+  color: var(--ink-soft); font-weight: 600; text-align: center;
+  background: var(--white);
+}
+.booster-btn.has-stock .b-cost { color: var(--pink); }
+
+/* endless node */
+.map-node.endless-node { font-size: 34px; }
+.map-node.endless-node .map-stars { font-size: 12px; letter-spacing: 1px; }

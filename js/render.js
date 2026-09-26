@@ -23,6 +23,7 @@
   var selection = null;
   var hammerMode = false;
   var boardShake = 0;
+  var hint = null; // {cells:[{r,c}], a, b, t0}
   var inputCb = null;
   var stateRef = null;
   var running = false;
@@ -451,6 +452,7 @@
       drawBoxes(now);
       drawSprites(now);
       drawSelection(now);
+      drawHint(now);
       ctx.restore();
     }
     drawParticles();
@@ -555,6 +557,67 @@
     ctx.lineWidth = 4;
     roundRect(ctx, selection.c * cell + 3, selection.r * cell + 3, cell - 6, cell - 6, cell * 0.22);
     ctx.stroke();
+    ctx.restore();
+  }
+
+  /* idle hint: sequential glow across the matching cells + swipe arrow */
+  function drawHint(now) {
+    if (!hint || !hint.cells || !hint.cells.length) return;
+    if (!hint.t0) hint.t0 = now;
+    var age = now - hint.t0;
+    if (age < 350) return;
+    var wave = (age - 350) / 950; // seconds-ish progress, loops
+
+    ctx.save();
+    for (var i = 0; i < hint.cells.length; i++) {
+      var p = hint.cells[i];
+      var phase = wave - i * 0.18;
+      phase = phase - Math.floor(phase);
+      var glow = Math.max(0, Math.sin(phase * Math.PI));
+      if (glow <= 0.01) continue;
+      var cx = (p.c + 0.5) * cell, cy = (p.r + 0.5) * cell;
+
+      var g = ctx.createRadialGradient(cx, cy, cell * 0.12, cx, cy, cell * 0.6);
+      g.addColorStop(0, "rgba(255,255,255," + (0.5 * glow) + ")");
+      g.addColorStop(1, "rgba(255,255,255,0)");
+      ctx.fillStyle = g;
+      ctx.fillRect(p.c * cell, p.r * cell, cell, cell);
+
+      ctx.strokeStyle = "rgba(255,255,255," + (0.8 * glow) + ")";
+      ctx.lineWidth = 3.5;
+      roundRect(ctx, p.c * cell + 5, p.r * cell + 5, cell - 10, cell - 10, cell * 0.2);
+      ctx.stroke();
+    }
+
+    // swipe arrow from a → b
+    if (hint.a && hint.b) {
+      var ax = (hint.a.c + 0.5) * cell, ay = (hint.a.r + 0.5) * cell;
+      var bx = (hint.b.c + 0.5) * cell, by = (hint.b.r + 0.5) * cell;
+      var dx = bx - ax, dy = by - ay;
+      var len = Math.hypot(dx, dy) || 1;
+      var ux = dx / len, uy = dy / len;
+      var bob = Math.sin(age / 200) * (cell * 0.06);
+      var alpha = 0.45 + 0.35 * Math.sin(age / 200);
+      var sx = ax + ux * cell * 0.34, sy = ay + uy * cell * 0.34 + bob;
+      var ex = bx - ux * cell * 0.3, ey = by - uy * cell * 0.3 + bob;
+      ctx.strokeStyle = "rgba(255,255,255," + alpha + ")";
+      ctx.lineWidth = 5;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(sx, sy);
+      ctx.lineTo(ex, ey);
+      ctx.stroke();
+      // arrowhead
+      var px = -uy, py = ux;
+      var hs = cell * 0.14;
+      ctx.fillStyle = "rgba(255,255,255," + alpha + ")";
+      ctx.beginPath();
+      ctx.moveTo(ex + ux * hs, ey + uy * hs);
+      ctx.lineTo(ex + px * hs * 0.7, ey + py * hs * 0.7);
+      ctx.lineTo(ex - px * hs * 0.7, ey - py * hs * 0.7);
+      ctx.closePath();
+      ctx.fill();
+    }
     ctx.restore();
   }
 
@@ -764,6 +827,10 @@
     setInput: function (cb) { inputCb = cb; },
 
     setSelection: function (pos) { selection = pos; },
+
+    setHint: function (h) {
+      hint = h ? { cells: h.match || [], a: h.a, b: h.b, t0: 0 } : null;
+    },
 
     setHammerMode: function (on) { hammerMode = !!on; },
 
